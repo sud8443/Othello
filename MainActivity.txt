@@ -1,0 +1,180 @@
+import android.content.Context;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+public class MainActivity extends AppCompatActivity  implements View.OnClickListener{
+
+    int n=8;    //Size of the basic 8X8 Grid of the othello game
+    LinearLayout mainLayout;    //The Linear Layout variable for the main layout
+    LinearLayout[] rows;  //The Linear Layout array for all the rows
+    LinearLayout footerLayout;  //The layout at the footer of the main layout
+    MyTextView[][] gameCells;   //The cells to store the game characters
+    MyTextView leftFooter, rightFooter;   //Cells to store the cells captured as the game progresses
+    String black="BLACK", white="WHITE";
+    final static int BLACK = 1;
+    final static int WHITE = 2;
+    boolean playerBturn = true;
+    MyTextView dummycell;
+    int[] slopearrayx = {-1,0,1,1,1,0,-1,-1};
+    int[] slopearrayy = {-1,-1,-1,0,1,1,1,0};
+    int B;
+    int W;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        mainLayout = (LinearLayout) findViewById(R.id.activity_main);
+        setUpGame();
+    }
+
+    private void setUpGame() {
+        gameCells = new MyTextView[n][n];
+        rows = new LinearLayout[n];
+        for( int i=0; i<n; i++){
+            rows[i] = new LinearLayout(this);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1);
+            rows[i].setLayoutParams(params);
+            rows[i].setOrientation(LinearLayout.HORIZONTAL);
+            rows[i].setBackgroundColor(ContextCompat.getColor(this,R.color.colorPrimary));
+            mainLayout.addView(rows[i]);
+        }
+
+        footerLayout = new LinearLayout(this);
+        LinearLayout.LayoutParams footparams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 2);
+        footerLayout.setLayoutParams(footparams);
+        footerLayout.setOrientation(LinearLayout.HORIZONTAL);
+        mainLayout.addView(footerLayout);
+
+        for( int i=0; i<n; i++){
+            for ( int j=0; j<n; j++){
+                gameCells[i][j] = new MyTextView(this);
+                LinearLayout.LayoutParams param = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1);
+                param.setMargins(2, 2, 2, 2);
+                gameCells[i][j].setLayoutParams(param);
+                gameCells[i][j].setTextSize(40);
+                gameCells[i][j].setBackgroundColor(ContextCompat.getColor(this,R.color.colorPrimaryDark));
+                gameCells[i][j].setPadding(2,2,2,2);
+                gameCells[i][j].setClickable(false);
+                gameCells[i][j].setId(j+10*i);
+                gameCells[i][j].setClicked(0);
+                gameCells[i][j].setOnClickListener(this);
+                rows[i].addView(gameCells[i][j]);
+            }
+        }
+
+        leftFooter = new MyTextView(this);
+        rightFooter = new MyTextView(this);
+        LinearLayout.LayoutParams foottextparams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1);
+        leftFooter.setTextSize(30);
+        rightFooter.setTextSize(30);
+        leftFooter.setText(black);
+        rightFooter.setText(white);
+        leftFooter.setLayoutParams(foottextparams);
+        rightFooter.setLayoutParams(foottextparams);
+        footerLayout.addView(leftFooter);
+        footerLayout.addView(rightFooter);
+
+        gameCells[(n/2) - 1][(n/2) - 1].setText("B");
+        gameCells[(n/2) - 1][(n/2) - 1].setClicked(1);
+        B=B+1;
+        gameCells[(n/2)][(n/2)].setText("B");
+        gameCells[(n/2)][(n/2)].setClicked(1);
+        B=B+1;
+        gameCells[(n/2) - 1][(n/2)].setText("W");
+        gameCells[(n/2)-1][(n/2)].setClicked(2);
+        W=W+1;
+        gameCells[(n/2)][(n/2) - 1].setText("W");
+        gameCells[(n/2)][(n/2) - 1].setClicked(2);
+        W=W+1;
+
+        validMoves(playerBturn);
+    }
+
+    private void validMoves(boolean Bturn) {
+        int dx,dy; // Variable to iterate
+        boolean validity;
+        for( int i=0; i<n; i++){
+            for( int j=0; j<n; j++){
+                if(Bturn){
+                    validity = checkMove(i,j,BLACK);
+                    gameCells[i][j].setClickable(true);
+                    gameCells[i][j].setBackgroundColor(ContextCompat.getColor(this,R.color.colorAccent));
+                }
+                else{
+                    validity = checkMove(i,j,WHITE);
+                    gameCells[i][j].setClickable(true);
+                    gameCells[i][j].setBackgroundColor(ContextCompat.getColor(this,R.color.white));
+                }
+            }
+        }
+    }
+
+    private boolean checkMove(int i, int j, int player) {
+        int coor=i*10 + j;
+        int flag=0;
+        int move_x,move_y;
+        if(gameCells[i][j].getClicked()==0) {
+            if (player == 1) {
+                for (int p = 0; p < 7; p++) {
+                    move_x = i + slopearrayx[p];
+                    move_y = j + slopearrayy[p];
+                    flag = 0;
+                    while (move_x < n && move_x > 0 && move_y >0 && move_y < n) {
+                        if (gameCells[move_x][move_y].getClicked() == 2) {
+                            move_x = move_x + slopearrayx[p];
+                            move_y = move_y + slopearrayy[p];
+                        } else if (gameCells[move_x][move_y].getClicked() == 1) {
+                            flag = 1;
+                        } else {
+                            break;
+                        }
+                    }
+                    if (flag == 1) {
+                        return true;
+                    }
+                }
+            } else if (player == 2) {
+                for (int p = 0; p < 7; p++) {
+                    move_x = i + slopearrayx[p];
+                    move_y = j + slopearrayy[p];
+                    flag = 0;
+                    while (move_x < n && move_x > 0 && move_y >0 && move_y < n) {
+                        if (gameCells[move_x][move_y].getClicked() == 1) {
+                            move_x = move_x + slopearrayx[p];
+                            move_y = move_y + slopearrayy[p];
+                        } else if (gameCells[move_x][move_y].getClicked() == 2) {
+                            flag = 1;
+                        } else {
+                            break;
+                        }
+                    }
+                    if (flag == 1) {
+                        return true;
+                    }
+                }
+
+            }
+        }
+            return false;
+    }
+
+    public void onClick(View v) {
+        MyTextView t =(MyTextView) v;
+        if(t.getClicked() == 0) {
+            t.setClicked(1);
+            if(playerBturn){
+                t.setText("B");
+            } else{
+                t.setText("W");
+            }
+            playerBturn = !playerBturn;
+        }
+    }
+
+}
